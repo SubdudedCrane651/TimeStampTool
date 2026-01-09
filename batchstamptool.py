@@ -7,7 +7,7 @@ import win32con
 
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QPushButton, QLabel,
-    QVBoxLayout, QFileDialog, QMessageBox, QListWidget
+    QVBoxLayout, QFileDialog, QMessageBox, QListWidget, QCheckBox
 )
 
 
@@ -57,7 +57,7 @@ class BatchTimestampFixer(QWidget):
         super().__init__()
 
         self.setWindowTitle("Batch File Timestamp Normalizer")
-        self.resize(500, 400)
+        self.resize(550, 500)
 
         self.folder_path = None
 
@@ -66,11 +66,15 @@ class BatchTimestampFixer(QWidget):
         self.btn_fix = QPushButton("Fix All Files")
         self.btn_fix.setEnabled(False)
 
+        # NEW: Recursive option
+        self.chk_recursive = QCheckBox("Include subfolders")
+
         self.file_list = QListWidget()
 
         layout = QVBoxLayout()
         layout.addWidget(self.label)
         layout.addWidget(self.btn_select)
+        layout.addWidget(self.chk_recursive)
         layout.addWidget(self.file_list)
         layout.addWidget(self.btn_fix)
         self.setLayout(layout)
@@ -88,11 +92,20 @@ class BatchTimestampFixer(QWidget):
 
         self.file_list.clear()
 
-        # List all files (non-recursive)
-        for filename in os.listdir(folder):
-            full_path = os.path.join(folder, filename)
-            if os.path.isfile(full_path):
-                self.file_list.addItem(full_path)
+        recursive = self.chk_recursive.isChecked()
+
+        if recursive:
+            # Walk all subdirectories
+            for root, dirs, files in os.walk(folder):
+                for filename in files:
+                    full_path = os.path.join(root, filename)
+                    self.file_list.addItem(full_path)
+        else:
+            # Only top-level files
+            for filename in os.listdir(folder):
+                full_path = os.path.join(folder, filename)
+                if os.path.isfile(full_path):
+                    self.file_list.addItem(full_path)
 
         if self.file_list.count() > 0:
             self.btn_fix.setEnabled(True)
@@ -106,19 +119,22 @@ class BatchTimestampFixer(QWidget):
 
         total = self.file_list.count()
         processed = 0
+        skipped = 0
 
         for i in range(total):
             path = self.file_list.item(i).text()
             try:
                 set_all_dates_to_created(path)
                 processed += 1
-            except Exception as e:
-                QMessageBox.warning(self, "Error", f"Failed on:\n{path}\n\n{str(e)}")
+            except Exception:
+                skipped += 1
+                continue  # silently skip
 
         QMessageBox.information(
             self,
             "Done",
-            f"Processed {processed} of {total} files.\nAll timestamps set to creation date."
+            f"Processed {processed} of {total} files.\n"
+            f"Skipped {skipped} files that could not be modified."
         )
 
 
