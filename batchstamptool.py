@@ -10,6 +10,8 @@ from PyQt5.QtWidgets import (
     QCheckBox, QProgressBar
 )
 
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 def set_all_dates_to_created(path):
     """Set modified + accessed + creation time to the creation time."""
