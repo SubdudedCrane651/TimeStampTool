@@ -13,6 +13,9 @@ from PyQt5.QtWidgets import (
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+import os
+os.environ["QT_LOGGING_RULES"] = "qt.qpa.fonts=false"
+
 def set_all_dates_to_created(path):
     """Set modified + accessed + creation time to the creation time."""
     handle = win32file.CreateFile(
